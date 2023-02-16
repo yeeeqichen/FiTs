@@ -75,7 +75,7 @@ mkdir -p $save_dir_pref
 log=logs/train_${dataset}__${run_name}.log.txt
 
 ###### Training ######
-python3 -u mask_greaselm.py \
+python3 -u post_train.py \
     --dataset $dataset \
     --align_mask $align_mask \
     --align_option $align_option \

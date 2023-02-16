@@ -35,6 +35,10 @@ bash scripts/run_post_train.sh
 bash scripts/run_finetune.sh
 ```
 
+## Reference
+If you use FiTs in a research paper, please cite our work as follows:
+> TODO
+
 ## Acknowledgment
 This repo is built upon the following work:
 ```

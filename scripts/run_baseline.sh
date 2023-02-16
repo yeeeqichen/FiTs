@@ -76,7 +76,7 @@ run_name=${name_prefix}_greaselm__ds_${dataset}__enc_${encoder}__k${k}__sd${seed
 log=logs/train_${dataset}__${run_name}.log.txt
 
 ###### Training ######
-python3 -u greaselm.py \
+python3 -u finetune.py \
     --dataset $dataset \
     --iterative_ie_layer $iterative_ie_layer \
     --node_classification $node_classification \

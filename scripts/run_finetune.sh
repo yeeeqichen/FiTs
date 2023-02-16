@@ -77,7 +77,7 @@ log=logs/train_${dataset}__${run_name}.log.txt
 use_wandb=true
 
 ###### Training ######
-python3 -u greaselm.py \
+python3 -u finetune.py \
     --dataset $dataset \
     --mode finetune \
     --use_wandb $use_wandb \
