@@ -17,7 +17,7 @@ To address the above two problems, we propose a Fine-grained Two-stage training 
 In detail,  we fine-tune the post-trained model via two auxiliary self-supervised tasks in addition to the QA supervision.
 Extensive experiments demonstrate that our approach achieves state-of-the-art performance on three benchmarks in the commonsense reasoning (i.e., CommonsenseQA, OpenbookQA) and medical question answering (i.e., MedQA-USMILE) domains.
 
-Paper link: [coming soon]()
+Paper link: [ArXiv](https://arxiv.org/abs/2302.11799)
 
 ## Running Experiments
 
@@ -52,7 +52,19 @@ bash scripts/run_finetune.sh
 
 ## Reference
 If you use FiTs in a research paper, please cite our work as follows:
-> TODO
+```
+@misc{https://doi.org/10.48550/arxiv.2302.11799,
+  doi = {10.48550/ARXIV.2302.11799},
+  url = {https://arxiv.org/abs/2302.11799},
+  author = {Ye, Qichen and Cao, Bowen and Chen, Nuo and Xu, Weiyuan and Zou, Yuexian},
+  keywords = {Computation and Language (cs.CL), Machine Learning (cs.LG), FOS: Computer and information sciences, FOS: Computer and information sciences},
+  title = {FiTs: Fine-grained Two-stage Training for Knowledge-aware Question Answering},
+  publisher = {arXiv},
+  year = {2023},
+  copyright = {Creative Commons Attribution 4.0 International}
+}
+
+```
 
 ## Acknowledgment
 This repo is built upon the following work:
