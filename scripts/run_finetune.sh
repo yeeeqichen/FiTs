@@ -13,7 +13,7 @@ node_regularization_num=10
 random_choice=false
 noisy_node=true
 noisy_node_num=10
-load_model_path='/PATH/TO/POST_TRAINED_CHECKPOINT.ckpt'
+load_model_path='/PATH/TO/POST_TRAINED_CHECKPOINT.ckpt'  # we recommend to use the model.pt.0 or model.pt.1
 not_from_mask=false
 name_prefix='FINE_TUNE'
 

@@ -132,7 +132,8 @@ class GreaseLM_DataLoader(object):
         # Load training data
         print ('train_statement_path', train_statement_path)
         if not self.align_mask:
-            self.train_qids, self.train_labels, self.train_encoder_data, train_concepts_by_sents_list = self.load_input_tensors(train_statement_path, max_seq_length)
+            self.train_qids, self.train_labels, self.train_encoder_data, \
+            train_concepts_by_sents_list = self.load_input_tensors(train_statement_path, max_seq_length)
         else:
             self.train_qids, self.train_labels, self.train_encoder_data, train_concepts_by_sents_list,\
             (self.train_linked_span, self.train_linked_ids) = self.load_input_tensors(train_statement_path,
@@ -397,7 +398,8 @@ class GreaseLM_DataLoader(object):
         else:
             raise ValueError("Invalid value for kg.")
 
-    def load_input_tensors(self, input_jsonl_path, max_seq_length, span_path=None, ids_path=None):
+    def load_input_tensors(self, input_jsonl_path, max_seq_length, span_path=None,
+                           ids_path=None):
         """Construct input tensors for the LM component of the model."""
         cache_path = input_jsonl_path + "-sl{}".format(max_seq_length) + \
                      (("-" + self.model_type) if self.model_type != "roberta" else "") + \
@@ -773,7 +775,7 @@ def load_bert_xlnet_roberta_input_tensors_with_linking_mask(statement_jsonl_path
                                                             linking_mask_save_path=None,
                                                             linked_span_save_path=None,
                                                             linked_ids_save_path=None,
-                                                            preprocess=False,
+                                                            preprocess=True,
                                                             is_med=False):
     def load_matcher(nlp, pattern_path):
         with open(pattern_path, "r", encoding="utf8") as fin:
@@ -826,12 +828,15 @@ def load_bert_xlnet_roberta_input_tensors_with_linking_mask(statement_jsonl_path
                 res.append((ddb_cid, name))
         return res
 
+    if os.path.exists(linked_span_save_path) and os.path.exists(linked_ids_save_path):
+        preprocess = False
     if preprocess:
         if not is_med:
             nlp = spacy.load('en_core_web_sm', disable=['ner', 'parser', 'textcat'])
-            nlp.add_pipe(nlp.create_pipe('sentencizer'))
-            matcher = load_matcher(nlp, '/data/yqc/GreaseLM/data/cpnet/matcher_patterns.json')
-            with open('/data/yqc/GreaseLM/data/cpnet/concept.txt', "r", encoding="utf8") as fin:
+            # nlp.add_pipe(nlp.create_pipe('sentencizer'))
+            nlp.add_pipe('sentencizer')
+            matcher = load_matcher(nlp, './data/cpnet/matcher_patterns.json')
+            with open('./data/cpnet/concept.txt', "r", encoding="utf8") as fin:
                 id2concept = [w.strip() for w in fin]
             concept2id = {w: i for i, w in enumerate(id2concept)}
         else:
@@ -843,12 +848,12 @@ def load_bert_xlnet_roberta_input_tensors_with_linking_mask(statement_jsonl_path
             nlp.add_pipe(linker)
 
             umls_to_ddb = {}
-            with open('/data/yqc/GreaseLM/data/ddb/ddb_to_umls_cui.txt') as f:
+            with open('./data/ddb/ddb_to_umls_cui.txt') as f:
                 for line in f.readlines()[1:]:
                     elms = line.split("\t")
                     umls_to_ddb[elms[2]] = elms[1]
 
-            with open('/data/yqc/GreaseLM/data/ddb/ptrs.txt', "r", encoding="utf8") as fin:
+            with open('./data/ddb/ptrs.txt', "r", encoding="utf8") as fin:
                 id2concept = [w.strip() for w in fin]
             concept2id = {w: i for i, w in enumerate(id2concept)}
 
@@ -1141,12 +1146,7 @@ def load_bert_xlnet_roberta_input_tensors_with_linking_mask(statement_jsonl_path
             with open('./process.log', 'a+') as f:
                 f.write('illegal cnt: {}\n'.format(illegal_cnt))
         else:
-            with open('/data/yqc/GreaseLM/debug/mask.jsonl', 'w') as f:
-                json.dump(linking_masks, f)
-            with open('/data/yqc/GreaseLM/debug/span.jsonl', 'w') as f:
-                json.dump(linked_span, f)
-            with open('/data/yqc/GreaseLM/debug/ids.jsonl', 'w') as f:
-                json.dump(linked_ids, f)
+            pass
 
     def select_field(features, field):
         return [[choice[field] for choice in feature.choices_features] for feature in features]
@@ -1161,91 +1161,34 @@ def load_bert_xlnet_roberta_input_tensors_with_linking_mask(statement_jsonl_path
 
     examples = read_examples(statement_jsonl_path)
     if preprocess:
+        print('pre-processing the align data...')
         process_linking_mask(examples, list(range(len(examples[0].endings))), max_seq_length, tokenizer)
-    else:
-        features, concepts_by_sents_list = simple_convert_examples_to_features(examples,
-                                                                               list(range(len(examples[0].endings))),
-                                                                               max_seq_length,
-                                                                               tokenizer)
-        with open(linked_span_save_path) as f:
-            linked_span = json.load(f)
-        with open(linked_ids_save_path) as f:
-            linked_ids = json.load(f)
-        example_ids = [f.example_id for f in features]
-        *data_tensors, all_label = convert_features_to_tensors(features)
-        num_choice = data_tensors[0].shape[1]
-        if debug:
-            linked_span = linked_span[:debug_sample_size * num_choice]
-            linked_ids = linked_ids[:debug_sample_size * num_choice]
-        print(data_tensors[0].shape)
-        print(len(linked_span), len(linked_ids))
-        assert len(linked_span) % num_choice == 0
-        reshaped_span = []
-        for i in range(len(linked_span) // num_choice):
-            reshaped_span.append(linked_span[i * num_choice: (i + 1) * num_choice])
-        assert len(linked_ids) % num_choice == 0
-        reshaped_ids = []
-        for i in range(len(linked_ids) // num_choice):
-            reshaped_ids.append(linked_ids[i * num_choice: (i + 1) * num_choice])
-        linked_span = reshaped_span
-        linked_ids = reshaped_ids
-        print(len(linked_span), len(linked_ids))
-        # exit('debug')
-        return example_ids, all_label, data_tensors, concepts_by_sents_list, (linked_span, linked_ids)
-
-
-if __name__ == '__main__':
-    from transformers import RobertaTokenizer
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='csqa')
-    args = parser.parse_args()
-    if args.dataset != 'medqa_usmle':
-        tokenizer = RobertaTokenizer.from_pretrained('/data/PLM/English/roberta/roberta-large/')
-    else:
-        tokenizer = BertTokenizer.from_pretrained('cambridgeltl/SapBERT-from-PubMedBERT-fulltext')
-    statement_path = 'data/{}/statement/train.statement.jsonl'.format(args.dataset)
-    load_bert_xlnet_roberta_input_tensors_with_linking_mask(
-        statement_path,
-        max_seq_length=512,
-        debug=False,
-        tokenizer=tokenizer,
-        debug_sample_size=10,
-        linking_mask_save_path='/data/yqc/GreaseLM//data/{}/linking/{}_linking_mask_train.jsonl'.format(args.dataset, args.dataset),
-        linked_span_save_path='/data/yqc/GreaseLM/data/{}/linking/{}_linked_span_train.jsonl'.format(args.dataset, args.dataset),
-        linked_ids_save_path='/data/yqc/GreaseLM/data/{}/linking/{}_linked_ids_train.jsonl'.format(args.dataset, args.dataset),
-        preprocess=True,
-        is_med=args.dataset == 'medqa_usmle'
-    )
-    statement_path = 'data/{}/statement/dev.statement.jsonl'.format(args.dataset)
-    load_bert_xlnet_roberta_input_tensors_with_linking_mask(
-        statement_path,
-        max_seq_length=512,
-        debug=False,
-        tokenizer=tokenizer,
-        debug_sample_size=2,
-        linking_mask_save_path='/data/yqc/GreaseLM/data/{}/linking/{}_linking_mask_dev.jsonl'.format(args.dataset,
-                                                                                                args.dataset),
-        linked_span_save_path='/data/yqc/GreaseLM/data/{}/linking/{}_linked_span_dev.jsonl'.format(args.dataset,
-                                                                                              args.dataset),
-        linked_ids_save_path='/data/yqc/GreaseLM/data/{}/linking/{}_linked_ids_dev.jsonl'.format(args.dataset,
-                                                                                            args.dataset),
-        preprocess=True,
-        is_med=args.dataset == 'medqa_usmle'
-    )
-    statement_path = 'data/{}/statement/test.statement.jsonl'.format(args.dataset)
-    load_bert_xlnet_roberta_input_tensors_with_linking_mask(
-        statement_path,
-        max_seq_length=512,
-        debug=False,
-        tokenizer=tokenizer,
-        debug_sample_size=2,
-        linking_mask_save_path='/data/yqc/GreaseLM/data/{}/linking/{}_linking_mask_test.jsonl'.format(args.dataset,
-                                                                                                      args.dataset),
-        linked_span_save_path='/data/yqc/GreaseLM/data/{}/linking/{}_linked_span_test.jsonl'.format(args.dataset,
-                                                                                                    args.dataset),
-        linked_ids_save_path='/data/yqc/GreaseLM/data/{}/linking/{}_linked_ids_test.jsonl'.format(args.dataset,
-                                                                                                  args.dataset),
-        preprocess=True,
-        is_med=args.dataset == 'medqa_usmle'
-    )
+    features, concepts_by_sents_list = simple_convert_examples_to_features(examples,
+                                                                           list(range(len(examples[0].endings))),
+                                                                           max_seq_length,
+                                                                           tokenizer)
+    with open(linked_span_save_path) as f:
+        linked_span = json.load(f)
+    with open(linked_ids_save_path) as f:
+        linked_ids = json.load(f)
+    example_ids = [f.example_id for f in features]
+    *data_tensors, all_label = convert_features_to_tensors(features)
+    num_choice = data_tensors[0].shape[1]
+    if debug:
+        linked_span = linked_span[:debug_sample_size * num_choice]
+        linked_ids = linked_ids[:debug_sample_size * num_choice]
+    print(data_tensors[0].shape)
+    print(len(linked_span), len(linked_ids))
+    assert len(linked_span) % num_choice == 0
+    reshaped_span = []
+    for i in range(len(linked_span) // num_choice):
+        reshaped_span.append(linked_span[i * num_choice: (i + 1) * num_choice])
+    assert len(linked_ids) % num_choice == 0
+    reshaped_ids = []
+    for i in range(len(linked_ids) // num_choice):
+        reshaped_ids.append(linked_ids[i * num_choice: (i + 1) * num_choice])
+    linked_span = reshaped_span
+    linked_ids = reshaped_ids
+    print(len(linked_span), len(linked_ids))
+    # exit('debug')
+    return example_ids, all_label, data_tensors, concepts_by_sents_list, (linked_span, linked_ids)

@@ -4,6 +4,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from transformers import BertModel, RobertaModel
 from transformers import modeling_bert
 from transformers import modeling_roberta
 from transformers import PretrainedConfig

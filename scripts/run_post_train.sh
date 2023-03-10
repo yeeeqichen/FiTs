@@ -29,6 +29,7 @@ k=5 #num of gnn layers
 gnndim=200
 
 # Existing arguments but changed for GreaseLM
+
 encoder_layer=-1
 max_node_num=200
 seed=5
@@ -56,7 +57,7 @@ resume_id=None
 sep_ie_layers=false
 random_ent_emb=false
 debug=false
-use_wandb=true
+use_wandb=false
 
 echo "***** hyperparameters *****"
 echo "dataset: $dataset"

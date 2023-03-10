@@ -16,7 +16,7 @@ except:
     from transformers import get_constant_schedule, get_constant_schedule_with_warmup,  get_linear_schedule_with_warmup
 import wandb
 
-from modeling import new_modeling_masked, modeling_aligned_mask
+from modeling import modeling_aligned_mask
 from utils import data_utils
 from utils import optimization_utils
 from utils import parser_utils
